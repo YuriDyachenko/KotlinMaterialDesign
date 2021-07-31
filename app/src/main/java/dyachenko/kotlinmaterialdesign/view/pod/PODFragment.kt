@@ -8,11 +8,10 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import coil.api.load
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
-import com.google.android.material.textfield.TextInputLayout
+import com.squareup.picasso.Callback
+import com.squareup.picasso.Picasso
 import dyachenko.kotlinmaterialdesign.R
 import dyachenko.kotlinmaterialdesign.databinding.BottomSheetLayoutBinding
 import dyachenko.kotlinmaterialdesign.databinding.PodFragmentBinding
@@ -20,9 +19,11 @@ import dyachenko.kotlinmaterialdesign.util.*
 import dyachenko.kotlinmaterialdesign.view.MainActivity
 import dyachenko.kotlinmaterialdesign.viewmodel.PODState
 import dyachenko.kotlinmaterialdesign.viewmodel.PODViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.MainScope
 import java.util.*
 
-class PODFragment : Fragment() {
+class PODFragment : Fragment(), CoroutineScope by MainScope() {
 
     private var _binding: PodFragmentBinding? = null
     private val binding get() = _binding!!
@@ -55,12 +56,9 @@ class PODFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setBottomSheetBehavior(view.findViewById(R.id.bottom_sheet_container))
-
-        setWikiOnClickListener(binding.wikiInputLayout)
-
-        initChips(binding.dayChipGroup)
-
+        setBottomSheetBehavior(view)
+        setWikiOnClickListener()
+        initChips()
         setBottomAppBar()
 
         val observer = Observer<PODState> { renderData(it) }
@@ -70,13 +68,13 @@ class PODFragment : Fragment() {
         getData()
     }
 
-    private fun initChips(chipGroupView: ChipGroup) {
-        chipGroupView.check(R.id.today_chip)
+    private fun initChips() = with(binding) {
+        dayChipGroup.check(R.id.today_chip)
 
-        chipGroupView.setOnCheckedChangeListener { chipGroup, position ->
+        dayChipGroup.setOnCheckedChangeListener { chipGroup, position ->
             chipGroup.findViewById<Chip>(position)?.let {
                 it.isChecked = true
-                var newDayOfPhoto = TODAY_PHOTO
+                var newDayOfPhoto = dayOfPhoto
                 when (it.id) {
                     R.id.today_chip -> newDayOfPhoto = TODAY_PHOTO
                     R.id.yesterday_chip -> newDayOfPhoto = YESTERDAY_PHOTO
@@ -90,18 +88,21 @@ class PODFragment : Fragment() {
         }
     }
 
-    private fun setWikiOnClickListener(inputLayout: TextInputLayout) {
-        inputLayout.setEndIconOnClickListener {
+    private fun setWikiOnClickListener() = with(binding) {
+        wikiInputLayout.setEndIconOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW).apply {
-                val text = binding.wikiInputEditText.text.toString()
+                val text = wikiInputEditText.text.toString()
                 data = Uri.parse("$WIKI_BASE_URL$text")
             })
         }
     }
 
-    private fun setBottomSheetBehavior(bottomSheet: ConstraintLayout) {
+    private fun setBottomSheetBehavior(view: View) {
+        val bottomSheet: ConstraintLayout = view.findViewById(R.id.bottom_sheet_container)
+
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
         bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+
         _bottomSheetBinding = BottomSheetLayoutBinding.bind(bottomSheet)
     }
 
@@ -122,21 +123,28 @@ class PODFragment : Fragment() {
     private fun renderData(data: PODState) = with(binding) {
         when (data) {
             is PODState.Success -> {
-                podLoadingLayout.hide()
                 val responseData = data.responseData
                 val url = responseData.url
-                if (url.isNullOrEmpty()) {
-                    podRootView.showSnackBar(getString(R.string.error_empty_url_msg),
-                        getString(R.string.reload_msg),
-                        { getData() })
-                } else {
-                    bottomSheetBinding.bottomSheetDescriptionHeader.text = responseData.title
-                    bottomSheetBinding.bottomSheetDescription.text = responseData.explanation
-                    podImageView.load(url) {
-                        lifecycle(this@PODFragment)
-                        error(R.drawable.ic_load_error_vector)
-                        placeholder(R.drawable.ic_no_photo_vector)
-                    }
+
+                Picasso
+                    .get()
+                    .load(url)
+                    .placeholder(R.drawable.ic_no_photo_vector)
+                    .into(podImageView, object : Callback {
+                        override fun onSuccess() {
+                            podLoadingLayout.hide()
+                        }
+
+                        override fun onError(e: Exception?) {
+                            podRootView.showSnackBar(getString(R.string.error_server_msg),
+                                getString(R.string.reload_msg),
+                                { getData() })
+                        }
+                    })
+
+                bottomSheetBinding.apply {
+                    bottomSheetDescriptionHeader.text = responseData.title
+                    bottomSheetDescription.text = responseData.explanation
                 }
             }
             is PODState.Loading -> {
