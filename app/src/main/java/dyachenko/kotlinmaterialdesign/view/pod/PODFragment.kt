@@ -19,11 +19,9 @@ import dyachenko.kotlinmaterialdesign.util.*
 import dyachenko.kotlinmaterialdesign.view.MainActivity
 import dyachenko.kotlinmaterialdesign.viewmodel.PODState
 import dyachenko.kotlinmaterialdesign.viewmodel.PODViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.MainScope
 import java.util.*
 
-class PODFragment : Fragment(), CoroutineScope by MainScope() {
+class PODFragment : Fragment() {
 
     private var _binding: PodFragmentBinding? = null
     private val binding get() = _binding!!
@@ -109,9 +107,7 @@ class PODFragment : Fragment(), CoroutineScope by MainScope() {
     private fun setBottomAppBar() = with(binding) {
         (activity as MainActivity).setSupportActionBar(bottomAppBar)
 
-        fab.setOnClickListener {
-            doAction(fab.id)
-        }
+        fab.setOnClickListener { doAction(fab.id) }
 
         setHasOptionsMenu(true)
     }
