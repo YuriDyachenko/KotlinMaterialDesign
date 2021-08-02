@@ -11,13 +11,14 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/purple_500"
+        android:background="?attr/colorPrimary"
         android:padding="10dp"
         android:text="@string/pod_description"
-        android:textColor="@color/color_white"
+        android:textColor="?attr/colorOnPrimary"
         android:textSize="22sp" />
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/nestedScrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:paddingTop="50dp">
@@ -46,21 +47,21 @@
 
                     <com.google.android.material.chip.Chip
                         android:id="@+id/today_chip"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        style="@style/ChipChoice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/today" />
 
                     <com.google.android.material.chip.Chip
                         android:id="@+id/yesterday_chip"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        style="@style/ChipChoice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/yesterday" />
 
                     <com.google.android.material.chip.Chip
                         android:id="@+id/day_before_yesterday_chip"
-                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        style="@style/ChipChoice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/day_before_yesterday" />
@@ -109,13 +110,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone"
+        app:layout_anchor="@+id/nestedScrollView"
+        app:layout_anchorGravity="center"
         tools:visibility="visible">
 
         <ProgressBar
             style="?android:attr/progressBarStyleLarge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center" />
+            android:layout_gravity="center"
+            android:indeterminateTint="?attr/colorPrimary" />
     </FrameLayout>
 
     <include layout="@layout/bottom_sheet_layout" />
@@ -125,7 +129,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        app:backgroundTint="@color/design_default_color_primary"
+        app:backgroundTint="?attr/colorPrimary"
         app:fabAlignmentMode="end"
         app:fabCradleRoundedCornerRadius="25dp"
         app:hideOnScroll="true"
@@ -136,9 +140,9 @@
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:backgroundTint="@color/teal_200"
+        android:backgroundTint="?attr/colorSecondary"
         app:layout_anchor="@id/bottom_app_bar"
         app:srcCompat="@drawable/ic_plus_fab"
-        app:tint="@color/purple_700"
+        app:tint="?attr/colorPrimary"
         tools:ignore="ContentDescription" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

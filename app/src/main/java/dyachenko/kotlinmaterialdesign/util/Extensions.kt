@@ -1,10 +1,12 @@
 package dyachenko.kotlinmaterialdesign.util
 
-import android.view.Gravity
 import android.view.View
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
 import com.google.android.material.snackbar.Snackbar
+import dyachenko.kotlinmaterialdesign.R
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -43,9 +45,19 @@ fun View.showSnackBar(
         .show()
 }
 
-fun Fragment.toastTop(string: String?) {
+fun Fragment.toastShow(string: String?) {
     Toast.makeText(context, string, Toast.LENGTH_LONG).apply {
-        setGravity(Gravity.TOP, 0, 250)
         show()
     }
+}
+
+fun FragmentManager.addFragmentWithBackStack(fragment: Fragment) = this.apply {
+    beginTransaction()
+        .add(R.id.container, fragment)
+        .addToBackStack(null)
+        .commit()
+}
+
+fun FragmentActivity.showFragment(fragment: Fragment) {
+    this.supportFragmentManager.addFragmentWithBackStack(fragment)
 }

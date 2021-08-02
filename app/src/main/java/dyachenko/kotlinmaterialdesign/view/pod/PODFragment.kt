@@ -15,14 +15,15 @@ import com.squareup.picasso.Picasso
 import dyachenko.kotlinmaterialdesign.R
 import dyachenko.kotlinmaterialdesign.databinding.BottomSheetLayoutBinding
 import dyachenko.kotlinmaterialdesign.databinding.PodFragmentBinding
+import dyachenko.kotlinmaterialdesign.model.SettingsData
 import dyachenko.kotlinmaterialdesign.util.*
 import dyachenko.kotlinmaterialdesign.view.MainActivity
+import dyachenko.kotlinmaterialdesign.view.settings.SettingsFragment
 import dyachenko.kotlinmaterialdesign.viewmodel.PODState
 import dyachenko.kotlinmaterialdesign.viewmodel.PODViewModel
 import java.util.*
 
 class PODFragment : Fragment() {
-
     private var _binding: PodFragmentBinding? = null
     private val binding get() = _binding!!
 
@@ -34,7 +35,6 @@ class PODFragment : Fragment() {
         ViewModelProvider(this).get(PODViewModel::class.java)
     }
 
-    private var dayOfPhoto = TODAY_PHOTO
 
     private var bottomNavigationDrawerFragment =
         BottomNavigationDrawerFragment(object : OnNavigationItemSelected {
@@ -72,14 +72,15 @@ class PODFragment : Fragment() {
         dayChipGroup.setOnCheckedChangeListener { chipGroup, position ->
             chipGroup.findViewById<Chip>(position)?.let {
                 it.isChecked = true
-                var newDayOfPhoto = dayOfPhoto
+                var newDayOfPhoto = SettingsData.DAY_OF_PHOTO
                 when (it.id) {
-                    R.id.today_chip -> newDayOfPhoto = TODAY_PHOTO
-                    R.id.yesterday_chip -> newDayOfPhoto = YESTERDAY_PHOTO
-                    R.id.day_before_yesterday_chip -> newDayOfPhoto = DAY_BEFORE_YESTERDAY_PHOTO
+                    R.id.today_chip -> newDayOfPhoto = SettingsData.TODAY_PHOTO
+                    R.id.yesterday_chip -> newDayOfPhoto = SettingsData.YESTERDAY_PHOTO
+                    R.id.day_before_yesterday_chip -> newDayOfPhoto =
+                        SettingsData.DAY_BEFORE_YESTERDAY_PHOTO
                 }
-                if (newDayOfPhoto != dayOfPhoto) {
-                    dayOfPhoto = newDayOfPhoto
+                if (newDayOfPhoto != SettingsData.DAY_OF_PHOTO) {
+                    SettingsData.DAY_OF_PHOTO = newDayOfPhoto
                     getData()
                 }
             }
@@ -113,7 +114,7 @@ class PODFragment : Fragment() {
     }
 
     private fun getData() {
-        viewModel.getPODFromServer(Date().subDays(dayOfPhoto).format())
+        viewModel.getPODFromServer(Date().subDays(SettingsData.DAY_OF_PHOTO).format())
     }
 
     private fun renderData(data: PODState) = with(binding) {
@@ -122,21 +123,30 @@ class PODFragment : Fragment() {
                 val responseData = data.responseData
                 val url = responseData.url
 
-                Picasso
-                    .get()
-                    .load(url)
-                    .placeholder(R.drawable.ic_no_photo_vector)
-                    .into(podImageView, object : Callback {
-                        override fun onSuccess() {
-                            podLoadingLayout.hide()
-                        }
+                if (responseData.mediaType == "image") {
+                    Picasso
+                        .get()
+                        .load(url)
+                        .placeholder(R.drawable.ic_no_photo_vector)
+                        .into(podImageView, object : Callback {
+                            override fun onSuccess() {
+                                podLoadingLayout.hide()
+                            }
 
-                        override fun onError(e: Exception?) {
-                            podRootView.showSnackBar(getString(R.string.error_server_msg),
-                                getString(R.string.reload_msg),
-                                { getData() })
-                        }
-                    })
+                            override fun onError(e: Exception?) {
+                                podRootView.showSnackBar(e?.message
+                                    ?: getString(R.string.error_server_msg),
+                                    getString(R.string.reload_msg),
+                                    { getData() })
+                            }
+                        })
+
+                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+                } else {
+                    podImageView.setImageResource(R.drawable.ic_no_photo_vector)
+                    podLoadingLayout.hide()
+                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_HALF_EXPANDED
+                }
 
                 bottomSheetBinding.apply {
                     bottomSheetDescriptionHeader.text = responseData.title
@@ -170,19 +180,19 @@ class PODFragment : Fragment() {
     fun doAction(id: Int): Boolean {
         when (id) {
             R.id.fab -> {
-                toastTop(getString(R.string.action_fab))
+                toastShow(getString(R.string.action_fab))
                 return true
             }
             R.id.action_favourite -> {
-                toastTop(getString(R.string.action_favourite))
+                toastShow(getString(R.string.action_favourite))
                 return true
             }
             R.id.action_about -> {
-                toastTop(getString(R.string.action_about))
+                toastShow(getString(R.string.action_about))
                 return true
             }
             R.id.action_settings -> {
-                toastTop(getString(R.string.action_settings))
+                activity?.showFragment(SettingsFragment.newInstance())
                 return true
             }
             android.R.id.home -> {
@@ -208,9 +218,6 @@ class PODFragment : Fragment() {
 
     companion object {
         private const val WIKI_BASE_URL = "https://en.wikipedia.org/wiki/"
-        private const val TODAY_PHOTO = 0
-        private const val YESTERDAY_PHOTO = 1
-        private const val DAY_BEFORE_YESTERDAY_PHOTO = 2
         private const val DRAWER_TAG = "DRAWER_TAG"
 
         fun newInstance() = PODFragment()
